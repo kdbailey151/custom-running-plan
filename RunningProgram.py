@@ -22,8 +22,6 @@ t2 = m26.ElapsedTime('3:18:00')
 s2 = m26.Speed(d1, t2)
 Tempo = s2.pace_per_mile()
 
-#1.0418 reduces pace by about one second per mile
-
 def weekly_total(week):
     '''(List of list of str, int) -> int
 
@@ -41,24 +39,38 @@ def weekly_total(week):
     week[i][1] = total
     return total
 
+def pace_change(Easy):
+    '''(string) -> string
+    Return a new pace approximately one second per mile faster by mulitplying
+    the speed in mph by 1.0418 and converting back to pace per mile.
+
+    >>> pace_change('9:09:01')
+    ('9:07:32')
+    '''
+    
+    
+    new_s = (s1.mph() * 1.0418)
+    
+    return new_s.pace_per_mile()
+    
 
 '#create starting weekly mileage templates based on initial mileage input'
 
 if starting_mileage > 30:
-    week_one = ([['M', 0, 'Rest'], ['T', 4, Tempo], ['W', 4, 'Easy'], ['Th', 6, Easy],
-                 ['F', 5, Easy], ['S', 0, 'Rest'],['Su', 12, Easy], ['Total', 31, '']])
+    week_one = ([['M', 0], ['T', 4], ['W', 4], ['Th', 6], ['F', 5], ['S', 0],
+                 ['Su', 12], ['Total', 31]])
 elif starting_mileage > 25 <= 30:
-    week_one = ([['M', 0, 'Rest'], ['T', 4, Tempo], ['W', 0], ['Th', 6, Easy],
+    week_one = ([['M', 0, 'Rest'], ['T', 4, Tempo], ['W', 0, 'Rest'], ['Th', 6, Easy],
                  ['F', 5, Easy], ['S', 0, 'Rest'],['Su', 11, Easy], ['Total', 26, '']])
 elif starting_mileage > 20 <= 25:
-    week_one = ([['M', 0, 'Rest'], ['T', 3, Tempo], ['W', 0, 'Rest'], ['Th', 5, Easy],
-                 ['F', 4, Easy], ['S', 0, 'Rest'], ['Su', 9, Easy], ['Total', 21, '']])
+    week_one = ([['M', 0], ['T', 3], ['W', 0], ['Th', 5], ['F', 4], ['S', 0],
+                 ['Su', 9], ['Total', 21]])
 elif starting_mileage > 15 <= 20:
-    week_one = ([['M', 0, 'Rest'], ['T', 2, Tempo], ['W', 0, 'Rest'], ['Th', 4, Easy],
-                 ['F', 3, Easy], ['S', 0, 'Rest'], ['Su', 6, Easy], ['Total', 15, '']])
+    week_one = ([['M', 0], ['T', 2], ['W', 0], ['Th', 4], ['F', 3], ['S', 0],
+                 ['Su', 6], ['Total', 15]])
 else:
-    week_one = ([['M', 0, 'Rest'], ['T', 1, Tempo], ['W', 0, 'Rest'], ['Th', 3, Easy],
-                 ['F', 2, Easy], ['S', 0, 'Rest'], ['Su', 4, Easy], ['Total', 10, '']])
+    week_one = ([['M', 0], ['T', 1], ['W', 0], ['Th', 3], ['F', 2], ['S', 0],
+                 ['Su', 4], ['Total', 10]])
 
 
 def next_week_phase_one(week):
@@ -80,14 +92,29 @@ def next_week_phase_one(week):
             if l[0] not in ('Su', 'T'):
                 new_week.append(week[i])
                 i = i + 1
+                if l[2] == Easy:
+                    pace_change(Easy)
+                    new_week.append(week[i])
+                    i = i + 1
+                else:
+                    new_week.append(week[i])
+                    i = i + 1
             else:
                 'add day/mileage to days of week'
                 week[i][1] = week[i][1] + 1
                 new_week.append(week[i])
                 i = i + 1
+                if l[2] == Easy:
+                    pace_change(Easy)
+                    new_week.append(week[i])
+                    i = i + 1
+                else:
+                    new_week.append(week[i])
+                    i = i + 1
         else:
             weekly_total(week_one)
             new_week.append(week[i])
+    
     return new_week
 
 
@@ -161,8 +188,10 @@ def bump_up(week):
     i = 0
 
     for l in week:
-        if l[0] != 'Total':
-            if l[0] not in ('W', 'S', 'Su'):
+        if l[0] == 'Total':
+            weekly_total(week_one)
+            new_week.append(week[i])            
+        if l[0] in ('M', 'T', 'Th', 'F'):
                 if l[1] != 0:
                     l[1] = l[1] -1
                     new_week.append(week[i])
@@ -170,27 +199,26 @@ def bump_up(week):
                 else:
                     new_week.append(week[i])
                     i = i + 1
-            if l[0] == 'W':
+        if l[0] == 'Su':
+            l[1] = l[1] + 2
+            new_week.append(week[i])
+            i= i + 1
+        if l[0] == 'W':
                 if l[1] == 0:
                     l[1] = 3                    
                     new_week.append(week[i])
-                    i = i + 1
+                    i = i + 1                    
                 else:
                     l[1] = l[1] - 1
                     new_week.append(week[i])
                     i = i + 1
-            if l[0] == 'S':
-                if week[i][1] == 0:
-                    week[i][1] = 3
-                    new_week.append(week[i])
-                    i = i + 1            
-            if l[0] == 'Su':
-                l[1] = l[1] + 1
+        if l[0] == 'S':
+            if week[2][1] == 0:
+                l[1] = 3                    
                 new_week.append(week[i])
-                i= i + 1
-        else:
-            weekly_total(week_one)
-            new_week.append(week[i])
+                i = i + 1
+            else:
+                new_week.append(week[i])
     return new_week
     
 def cutback_week(week):
